@@ -1,82 +1,65 @@
-# Приложение для идентификации сотрудников компании на КПП
+# Checkpoint service
 
-## Краткое описание проекта
+A system for identifying employees at a company checkpoint. A security officer has to
+answer one question quickly, whether the person standing in front of them may pass, and
+that requires the identity document, the employee card and a search that works by any of
+their fields.
 
-Приложение для идентификации сотрудников компании на КПП. Разрабатываемый программный продукт позволяет сотруднику СБ быстро и качественно организовывать мероприятия по обеспечению безопасности на объектах.
+## Existing solutions
 
-## Краткое описание предметной области
+| Solution | Search by arbitrary attributes | Stores the identity document | Self-registration |
+|----------|:---:|:---:|:---:|
+| [ИНФОСТАРТ](https://infostart.ru) | no | no | yes |
+| [PASS24.online](https://pass24online.ru) | no | no | yes |
+| [Малленом Системс](https://www.mallenom.ru) | no | yes | no |
+| This project | yes | yes | yes |
 
-Предметной областью является сфера безопасности (в частности, организация безопасности каких-либо объектов)
+## Roles and scenarios
 
-## Краткий анализ аналогичных решений
+A guest is an unauthenticated visitor, an employee is a registered user who owns an
+information card, and a security officer is the employee responsible for the checkpoint.
 
-Решение                                      | Поиск сотрудников по различным параметрам | Хранение документа, удостоверяющего личность | Возможность саморегистрации сотрудником | 
--------------------------------------------- |-------------------------------------------|----------------------------------------------|-----------------------------------------
-[ИНФОСТАРТ](https://infostart.ru)         | -                                         | -                                            | +                                       |
-[PASS24.online](https://pass24online.ru)   | -                                         | -                                            | +                                       |
-[Малленом Системс](https://www.mallenom.ru) | -                                         | +                                            | -                                       |
-Реализуемое решение                          | +                                         | +                                            | +                                       |
+An employee opens the site, signs up and lands on their own card to fill in. A security
+officer signs in and gets the list of employees of their company, searches it by passport
+data or filters it by document type, and sees either the matching employee or an explicit
+statement that nobody was found.
 
-## Краткое обоснование целесообразности и актуальности проекта
+![Use case diagram](diagrams/use-case.svg)
 
-В современном мире такая система является очень актуальной и востребованной, так как всегда необходимо поддерживать безопасность в абсолютно разных областях и местах.
+## Data
 
-## Краткое описание акторов (ролей)
+![ER diagram](diagrams/ER.svg)
 
-В проекте присутствуют следующие роли:
+## Business processes
 
-- Гость - неавторизованный сотрудник компании
-- Сотрудник компании - пользователь, зарегистрированный в сервисе
-- Сотрудник СБ - сотрудник компании, обеспечивающий безопасность в рамках компании
+Working with one's own information card.
 
-## Use-Case
+![Card process](diagrams/BPMN1.svg)
 
-![Use-Case диаграмма](diagrams/use-case.svg)
+Looking up a single employee.
 
-## ER-диаграмма
+![Search process](diagrams/BPMN2.svg)
 
-![ER-диаграмма](diagrams/ER.svg)
+Looking up several employees at once.
 
-## Сценарии использования
+![Filter process](diagrams/BPMN3.svg)
 
-- Регистрация сотрудника в приложении:
-  1) Сотрудник переходит на сайт
-  2) Сотрудник открывает форму для регистрации и регистрируется
-  3) Пользователь перенаправляется на страницу со своей информационной карточкой и заполняет ее
-- Поиск сотрудника по паспортным данным:
-  1) Сотрудник СБ переходит на сайт
-  2) Сотрудник СБ переходит на страницу входа и авторизовывается
-  3) Сотрудник СБ перенаправляется на страницу со списком всех сотрудников его компании
-  4) Сотрудник СБ вводит в поисковую строку, расположенную на той же странице, паспортные данные человека
-  5) Сотрудник СБ нажимает на кнопку "Поиск" для осуществления поиска
-  6) На экране отображается информация о найденном сотруднике или информация о том, что сотрудник не найден
-- Получение списка отфильтрованных по типу документа сотрудников:
-  1) Сотрудник СБ переходит на сайт
-  2) Сотрудник СБ переходит на страницу входа и авторизовывается
-  3) Сотрудник СБ перенаправляется на страницу со списком всех сотрудников его компании
-  4) Сотрудник СБ выбирает параметр для фильтрации в виде "Тип документа" и устанавливает необходимый тип документа
-  5) Сотрудник СБ нажимает на кнопку "Применить фильтр"
-  6) На экране отображается список сотрудников, удовлетворяющих заданным фильтрам
+## Architecture
 
-## Формализация ключевых бизнес-процессов
+A single-page web application with a Go backend, a Vue frontend, PostgreSQL for the
+relational data and MongoDB for the photographs.
 
-![Процесс входа для работы с информационной карточкой](diagrams/BPMN1.svg)
-![Процесс входа для поиска информации о пользователе](diagrams/BPMN2.svg)
-![Процесс входа для поиска информации о нескольких сотрудниках](diagrams/BPMN3.svg)
+![Components](diagrams/components.svg)
 
+The backend is layered into models, services with their DTOs and storage, each storage
+interface backed by a generated mock so the service layer can be tested in isolation.
 
-## Описание типа приложения и выбранного технологического стека
+![Class diagram](diagrams/uml.svg)
 
-- Тип приложения - WebSPA
-- Технологический стек:
-  - Backend - Go
-  - Frontend - Vue.js
-  - Database - PostgreSQL + MongoDB
+## Beyond the web interface
 
-## Верхнеуровневое разбиение на компоненты
+`src/backend/console` is a terminal client built on `tview` that walks through the same
+scenarios, and `src/backend/python/detector.py` locates a face on an uploaded photograph.
+Unit tests over the service layer run in CI on every push, and the build follows them.
 
-![Верхнеуровневое разбиение на компоненты](diagrams/components.svg)
-
-## UML диаграмма классов компонентов бизнес-логики и доступа к данным
-
-![UML диаграмма классов компонентов бизнес-логики и доступа к данным](diagrams/uml.svg)
+Work is split across branches, one per lab, with `main` holding the finished result.
